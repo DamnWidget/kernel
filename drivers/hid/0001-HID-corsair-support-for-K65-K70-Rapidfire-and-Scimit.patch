@@ -1,0 +1,56 @@
+From a65457875b3813a794ef1cccb89a501f9ddbe4d5 Mon Sep 17 00:00:00 2001
+Message-Id: <a65457875b3813a794ef1cccb89a501f9ddbe4d5.1486737756.git.oscar.campos@member.fsf.org>
+In-Reply-To: <cover.1486737756.git.oscar.campos@member.fsf.org>
+References: <cover.1486737756.git.oscar.campos@member.fsf.org>
+From: Oscar Campos <oscar.campos@member.fsf.org>
+Date: Fri, 10 Feb 2017 12:23:41 +0000
+Subject: [PATCH 1/2] HID: corsair: support for K65-K70 Rapidfire and Scimitar
+ Pro RGB
+Cc: linux-kernel@vger.kernel.org
+
+Add quirks for several corsair gaming devices to avoid long delays on
+report initialization
+
+Supported devices:
+
+ - Corsair K65RGB Rapidfire Gaming Keyboard
+ - Corsair K70RGB Rapidfire Gaming Keyboard
+ - Corsair Scimitar Pro RGB Gaming Mouse
+
+Signed-off-by: Oscar Campos <oscar.campos@member.fsf.org>
+---
+ drivers/hid/hid-ids.h           | 3 +++
+ drivers/hid/usbhid/hid-quirks.c | 3 +++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 350accfee8e8..1b693192f71a 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -278,6 +278,9 @@
+ #define USB_DEVICE_ID_CORSAIR_K70RGB    0x1b13
+ #define USB_DEVICE_ID_CORSAIR_STRAFE    0x1b15
+ #define USB_DEVICE_ID_CORSAIR_K65RGB    0x1b17
++#define USB_DEVICE_ID_CORSAIR_K70RGB_RAPIDFIRE  0x1b38
++#define USB_DEVICE_ID_CORSAIR_K65RGB_RAPIDFIRE  0x1b39
++#define USB_DEVICE_ID_CORSAIR_SCIMITAR_PRO_RGB  0x1b3e
+ 
+ #define USB_VENDOR_ID_CREATIVELABS	0x041e
+ #define USB_DEVICE_ID_CREATIVE_SB_OMNI_SURROUND_51	0x322c
+diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
+index 30a2977e2645..23ac2c393d96 100644
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -80,6 +80,9 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_CORSAIR, USB_DEVICE_ID_CORSAIR_K70RGB, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_CORSAIR, USB_DEVICE_ID_CORSAIR_K65RGB, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_CORSAIR, USB_DEVICE_ID_CORSAIR_STRAFE, HID_QUIRK_NO_INIT_REPORTS | HID_QUIRK_ALWAYS_POLL },
++	{ USB_VENDOR_ID_CORSAIR, USB_DEVICE_ID_CORSAIR_K70RGB_RAPIDFIRE, HID_QUIRK_NO_INIT_REPORTS | HID_QUIRK_ALWAYS_POLL },
++	{ USB_VENDOR_ID_CORSAIR, USB_DEVICE_ID_CORSAIR_K65RGB_RAPIDFIRE, HID_QUIRK_NO_INIT_REPORTS | HID_QUIRK_ALWAYS_POLL },
++	{ USB_VENDOR_ID_CORSAIR, USB_DEVICE_ID_CORSAIR_SCIMITAR_PRO_RGB, HID_QUIRK_NO_INIT_REPORTS | HID_QUIRK_ALWAYS_POLL },
+ 	{ USB_VENDOR_ID_CREATIVELABS, USB_DEVICE_ID_CREATIVE_SB_OMNI_SURROUND_51, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_DMI, USB_DEVICE_ID_DMI_ENC, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_DRAGONRISE, USB_DEVICE_ID_DRAGONRISE_WIIU, HID_QUIRK_MULTI_INPUT },
+-- 
+2.11.0
+

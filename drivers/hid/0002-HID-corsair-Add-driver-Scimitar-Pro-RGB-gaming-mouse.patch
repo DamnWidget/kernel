@@ -1,0 +1,142 @@
+From 9cf3970e2a410d86c1dfbbef4e9e14517af966ea Mon Sep 17 00:00:00 2001
+Message-Id: <9cf3970e2a410d86c1dfbbef4e9e14517af966ea.1486737756.git.oscar.campos@member.fsf.org>
+In-Reply-To: <cover.1486737756.git.oscar.campos@member.fsf.org>
+References: <cover.1486737756.git.oscar.campos@member.fsf.org>
+From: Oscar Campos <oscar.campos@member.fsf.org>
+Date: Fri, 10 Feb 2017 13:29:00 +0000
+Subject: [PATCH 2/2] HID: corsair: Add driver Scimitar Pro RGB gaming mouse
+ 1b1c:1b3e
+Cc: linux-kernel@vger.kernel.org
+
+This mouse sold by Corsair as Scimitar PRO RGB defines two consecutive
+Logical Minimum items in its Application (Consumer.0001) report making
+it non parseable. This driver fixes the report descriptor overriding
+byte 77 in rdesc from 0x16 (Logical Minimum with 16 bits value) to 0x26
+(Logical Maximum with 16 bits value).
+
+Signed-off-by: Oscar Campos <oscar.campos@member.fsf.org>
+---
+ drivers/hid/Kconfig             | 10 ++++++
+ drivers/hid/Makefile            |  1 +
+ drivers/hid/hid-corsair-mouse.c | 76 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 87 insertions(+)
+ create mode 100644 drivers/hid/hid-corsair-mouse.c
+
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index 4070b7386e9d..1ad179b70b15 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -191,6 +191,16 @@ config HID_CORSAIR
+ 	Supported devices:
+ 	- Vengeance K90
+ 
++config HID_CORSAIR_MOUSE:
++    tristate "Corsair mice"
++    depends on HID && USB
++    ---help---
++    Support for Corsair mice devices that are not fully compliant with
++    the HID standard.
++
++    Supported devices:
++    - Scimitar Pro RGB
++
+ config HID_PRODIKEYS
+ 	tristate "Prodikeys PC-MIDI Keyboard support"
+ 	depends on HID && SND
+diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
+index 4d111f23e801..34d17e9b4640 100644
+--- a/drivers/hid/Makefile
++++ b/drivers/hid/Makefile
+@@ -33,6 +33,7 @@ obj-$(CONFIG_HID_CHERRY)	+= hid-cherry.o
+ obj-$(CONFIG_HID_CHICONY)	+= hid-chicony.o
+ obj-$(CONFIG_HID_CMEDIA)	+= hid-cmedia.o
+ obj-$(CONFIG_HID_CORSAIR)	+= hid-corsair.o
++obj-$(CONFIG_HID_CORSAIR_MOUSE)	+= hid-corsair-mouse.o
+ obj-$(CONFIG_HID_CP2112)	+= hid-cp2112.o
+ obj-$(CONFIG_HID_CYPRESS)	+= hid-cypress.o
+ obj-$(CONFIG_HID_DRAGONRISE)	+= hid-dr.o
+diff --git a/drivers/hid/hid-corsair-mouse.c b/drivers/hid/hid-corsair-mouse.c
+new file mode 100644
+index 000000000000..3f6d6f6cc246
+--- /dev/null
++++ b/drivers/hid/hid-corsair-mouse.c
+@@ -0,0 +1,76 @@
++/*
++ * HID driver for Corsair mouse devices
++ *
++ * Supported devices:
++ *  - Scimitar RGB Pro
++ *
++ * Copyright (c) 2017 Oscar Campos
++ */
++
++/*
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ */
++
++#include <linux/hid.h>
++#include <linux/module.h>
++#include <linux/usb.h>
++
++#include "hid-ids.h"
++
++/*
++ * The report descriptor of Corsair Scimitar RGB Pro gaming mouse is
++ * non parseable as they define two consecutive Logical Minimum for
++ * the Usage Page (Consumer) in rdescs bytes 75 and 77 being 77 0x16
++ * that should be obviousy 0x26 for Logical Magimum of 16 bits. This
++ * prevents poper parsing of the report descriptor due Logical
++ * Minimum being larger than Logical Maximum.
++ *
++ * This driver fixes the report descriptor for:
++ * - USB ID b1c:1b3e, sold as Scimitar RGB Pro Gaming mouse
++ */
++
++static __u8 *corsair_mouse_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++		unsigned int *rsize)
++{
++	struct usb_interface *intf = to_usb_interface(hdev->dev.parent);
++
++	if (intf->cur_altsetting->desc.bInterfaceNumber == 1) {
++		/*
++		 * Corsair Scimitar RGB Pro report descriptor is broken and
++		 * defines two different Logical Minimum for the Consumer
++		 * Application. The byte 77 should be a 0x26 defining a 16
++		 * bits integer for the Logical Maximum but it is a 0x16
++		 * instead (Logical Minimum)
++		 */
++		switch (hdev->product) {
++		case USB_DEVICE_ID_CORSAIR_SCIMITAR_PRO_RGB:
++			if (*rsize >= 172 && rdesc[75] == 0x15 && rdesc[77] == 0x16
++					&& rdesc[78] == 0xff && rdesc[79] == 0x0f) {
++				hid_info(hdev, "Fixing up report descriptor\n");
++				rdesc[77] = 0x26;
++			}
++			break;
++		}
++
++	}
++	return rdesc;
++}
++
++static const struct hid_device_id corsair_mouse_devices[] = {
++	{ HID_USB_DEVICE(USB_VENDOR_ID_CORSAIR,
++			USB_DEVICE_ID_CORSAIR_SCIMITAR_PRO_RGB) },
++	{ }
++};
++MODULE_DEVICE_TABLE(hid, corsair_mouse_devices);
++
++static struct hid_driver corsair_mouse_driver = {
++	.name = "corsair_mouse",
++	.id_table = corsair_mouse_devices,
++	.report_fixup = corsair_mouse_report_fixup,
++};
++
++module_hid_driver(corsair_mouse_driver);
++MODULE_LICENSE("GPL");
+-- 
+2.11.0
+

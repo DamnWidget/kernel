@@ -1,0 +1,56 @@
+From 9cf3970e2a410d86c1dfbbef4e9e14517af966ea Mon Sep 17 00:00:00 2001
+Message-Id: <cover.1486737756.git.oscar.campos@member.fsf.org>
+From: Oscar Campos <oscar.campos@member.fsf.org>
+Date: Fri, 10 Feb 2017 14:42:36 +0000
+Subject: [PATCH 0/2] HID: Corsair Scimitar Pro RGB gaming mouse driver and support for other Corsair devices
+Cc: linux-kernel@vger.kernel.org
+
+
+Hi all,
+Since I have a Corsair Scimitar PRO RGB that does not works on Linux, I
+tried to find a solution doing some research but was not able to find any.
+
+The kernel just complained about not being able to parse one of the report
+descriptor items giving back an error -22, enabling the hid debug support I
+could get more detailed information from the Kernel that was now reporting
+`logical range invalid 0xfff 0x7f` by `hid-core.c`
+
+Taking a look at the output of the /sys/kernel/debug/hid/DEVICE/rdesc
+I noticed that one of the report items was using 0x15 and 0x16 items
+consecutively for Logical Minimum and Logical Maximum, obviously the
+latter one was wrong and it should be 0x26 (16 bits Logical Maximum)
+instead of 0x16 (16 bits Logical Minimum).
+
+Investigating this issue I also noticed `timeout initializing reports`
+in both my box and my wifes for this and other Corsair new devices
+(K65 and K70 RGB Rapidfire) so I also added new device ids and added
+common quirks to fix it in drivers/hid/usbhid/hid-quirks.c
+
+In the patchset, the first patch  adds support for K65-K70 new RGB
+Rapidfire devices and the second one adds a new driver `hid-corsair-mouse.c`
+to fix the Scimitar Pro RGB parsing problem.
+
+I created the new mouse driver instead of add code to the already existent
+`hid-corsair.c` as it seem quite common to split mouse and keyboard driver
+support.
+
+Best Regards,
+Oscar Campos
+
+---
+
+Oscar Campos (2):
+  HID: corsair: support for K65-K70 Rapidfire and Scimitar Pro RGB
+  HID: corsair: Add driver Scimitar Pro RGB gaming mouse 1b1c:1b3e
+
+ drivers/hid/Kconfig             | 10 ++++++
+ drivers/hid/Makefile            |  1 +
+ drivers/hid/hid-corsair-mouse.c | 76 +++++++++++++++++++++++++++++++++++++++++
+ drivers/hid/hid-ids.h           |  3 ++
+ drivers/hid/usbhid/hid-quirks.c |  3 ++
+ 5 files changed, 93 insertions(+)
+ create mode 100644 drivers/hid/hid-corsair-mouse.c
+
+--
+2.11.0
+
